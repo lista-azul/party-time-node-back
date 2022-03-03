@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
+    
     /* Language and Environment */
     "target": "es6",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     /* Modules */
     "module": "commonjs",
     "rootDir": "./src",
     "moduleResolution": "node",
     /* Emit */
+    "allowJs": true,
     "outDir": "./build",
     /* Interop Constraints */
     "esModuleInterop": true,
@@ -17,6 +21,6 @@
     "skipLibCheck": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules","./build/**/*"
   ],
 }
