@@ -1,11 +1,10 @@
 import { Request, Response } from 'express'
-import { QueryResult } from 'pg';
-import { pool } from '..//database'
+import { Event } from '../models';
 
 export const getEvents = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const response: QueryResult = await pool.query('SELECT * FROM events');
-        return res.status(200).json(response.rows)
+        const events = await Event.findAll();
+        return res.status(200).json(events)
     } catch (error) {
         return res.status(500).json(error)
     }
@@ -13,9 +12,13 @@ export const getEvents = async (req: Request, res: Response): Promise<Response> 
 
 export const getEvent = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const id = parseInt(req.params.id)
-        const response: QueryResult = await pool.query('SELECT * FROM events WHERE id = $1', [id]);
-        return res.status(200).json(response.rows)
+        const id = req.params.id
+        const event = await Event.findOne({
+            where: {
+                id
+            }
+        });
+        return res.status(200).json(event)
     } catch (error) {
         return res.status(500).json(error)
     }
@@ -24,12 +27,14 @@ export const getEvent = async (req: Request, res: Response): Promise<Response> =
 export const postEvent = async (req: Request, res: Response): Promise<Response> => {
     try {
         const { name, title, description, type, date, location, price } = req.body
-        const response: QueryResult = await pool.query('INSERT INTO events (name, title, description, type, date, location, price) VALUES ($1, $2, $3, $4, $5, $6, $7)', [name, title, description, type, date, location, price]);
+
+        let newEvent = await Event.create(req.body, {
+            fields: ['name', 'title', 'description', 'type', 'date', 'location', 'price']
+        });
+
         return res.json({
-            message: "Created succesfully",
-            body: {
-                event: req.body
-            }
+            message: "Event created!",
+            data: newEvent
         })
     } catch (error) {
         return res.status(500).json(error)
@@ -38,10 +43,34 @@ export const postEvent = async (req: Request, res: Response): Promise<Response> 
 
 export const putEvent = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const id = parseInt(req.params.id)
+        const id = req.params.id
+
         const { name, title, description, type, date, location, price } = req.body
-        const response: QueryResult = await pool.query('UPDATE events SET name = $1, title = $2, description = $3, type = $4, date = $5, location = $6, price = $7 WHERE id = $8', [name, title, description, type, date, location, price, id]);
-        return res.json("Updated")
+
+        const event = await Event.findOne({
+            where: {
+                id
+            }
+        });
+
+        if (event) {
+            await Event.update(req.body, {
+                where: {
+                    id: id
+                }
+            });
+
+            return res.json({
+                message: 'Project updated',
+                data: req.body
+            })
+        }
+
+        return res.status(404).json({
+            message: 'Event not found',
+            data: {}
+        });
+
     } catch (error) {
         return res.status(500).json(error)
     }
@@ -49,9 +78,29 @@ export const putEvent = async (req: Request, res: Response): Promise<Response> =
 
 export const deleteEvent = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const id = parseInt(req.params.id)
-        await pool.query('DELETE FROM events WHERE id = $1', [id]);
-        return res.json("Deleted")
+        const id = req.params.id
+
+        const event = await Event.findOne({
+            where: {
+                id
+            }
+        });
+
+        let deleteRowCount = 0;
+
+        if (event) {
+            deleteRowCount = await Event.destroy({
+                where: {
+                    id
+                }
+            });
+        }
+
+        return res.json({
+            message: 'Event deleted',
+            data: deleteRowCount
+        })
+
     } catch (error) {
         return res.status(500).json(error)
     }
